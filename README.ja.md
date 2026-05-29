@@ -9,20 +9,6 @@
 - **Track B — 生成的 ABM**（Rust `brinsfield`，[socsim](https://github.com/akitenkrad/rs-social-simulation-tools) ライブラリ上）: Watts–Strogatz 組織ネットワーク上の 6 動機サイレンスシミュレーション．各従業員は `{ineffectual, relational, defensive, diffident, disengaged, deviant}` 上の 6 動機確率ベクトル `MotiveVec6` を持ち，EMA 学習動的で更新される．これにより Brinsfield の横断的な動機分布が定常状態として創発する．排他的な 4 つの意思決定モード `--decision-mode {llm|rule_6dim|rule_4dim|rule_3dim}` が，LLM 駆動の割当を rule ベースの softmax ablation および Knoll 4 類型 / Van Dyne 3 類型への collapse と対比する．
 - **Track A — 心理測定的レプリケーション**（Python `brinsfield-tools`）: 独立サンプルでの competing-models CFA（6 因子 vs 1–5 因子 + bifactor）．実調査データなしでも，較正済み合成データ経路でエンドツーエンド実行できる．
 
-実装範囲は Phase Status 表に示す．
-
-## Phase Status
-
-| Phase | 内容 | 状態 |
-|-------|------|------|
-| 0 | リポジトリ scaffold + socsim git 依存 + bilingual docs | ✓ 完了 |
-| **1** | **`MotiveVec6` 6 動機ベクトル + `voice_decision`（LLM + rule）+ `motive_dynamics` EMA + `run`** | ✓ **完了** |
-| **2** | **`sweep`（ψ_learn × p_retaliate × motive-init）+ `visualize` / `visualize-sweep`** | ✓ **完了** |
-| **3** | **`ablate` 6/4/3 次元 competing model + `cfa`（semopy）+ `reproduce`（6 因子優位）** | ✓ **完了（合成データ経路）** |
-| 3（実データ） | 実調査 CSV での独立サンプル CFA | tool は ready（`survey-loader --csv`）；実データ待ち |
-
-本 scaffold は合成データ経路で Phase 1–3 を完全実装する．唯一の繰延要素は実調査データの収集であり，分析ツールは `survey-loader --csv` 経由で既に実データに対応する．
-
 ## 2 層決定論
 
 LLM 出力は socsim の bit 再現性の **外側** にあるため，設計を 2 層に分ける．

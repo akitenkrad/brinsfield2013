@@ -9,20 +9,6 @@ A hybrid replication of **Brinsfield (2013), "Employee Silence Motives: Investig
 - **Track B — generative ABM** (Rust `brinsfield` on the [socsim](https://github.com/akitenkrad/rs-social-simulation-tools) library): a six-motive silence simulation on a Watts–Strogatz organisational network. Each employee carries a six-motive probability vector (`MotiveVec6`) over `{ineffectual, relational, defensive, diffident, disengaged, deviant}`, updated by an EMA learning dynamic so that Brinsfield's cross-sectional motive distribution emerges as a steady state. Four mutually exclusive decision modes — `--decision-mode {llm|rule_6dim|rule_4dim|rule_3dim}` — contrast an LLM-driven assignment against rule-based softmax ablations and the Knoll-4 / Van-Dyne-3 competing collapses.
 - **Track A — psychometric replication** (Python `brinsfield-tools`): competing-models CFA (6-factor vs 1–5-factor + bifactor) of an independent sample, runnable end-to-end on a calibrated synthetic-data path without real survey data.
 
-The Phase Status table records what is implemented vs deferred.
-
-## Phase Status
-
-| Phase | Description | Status |
-|-------|-------------|--------|
-| 0 | Repository scaffold + socsim git deps + bilingual docs | ✓ done |
-| **1** | **`MotiveVec6` six-motive vector + `voice_decision` (LLM + rule) + `motive_dynamics` EMA + `run`** | ✓ **done** |
-| **2** | **`sweep` (ψ_learn × p_retaliate × motive-init) + `visualize` / `visualize-sweep`** | ✓ **done** |
-| **3** | **`ablate` 6/4/3-dim competing model + `cfa` (semopy) + `reproduce` (6-factor superiority)** | ✓ **done (synthetic-data path)** |
-| 3 (real data) | Independent-sample CFA on a real survey CSV | tooling ready (`survey-loader --csv`); real data deferred |
-
-This scaffold delivers Phase 1–3 in full on the synthetic-data path. Real-survey collection is the only deferred element; the analysis tooling already runs against it via `survey-loader --csv`.
-
 ## Two-layer determinism
 
 LLM output is **outside** socsim's bit-reproducibility, so the design splits into two layers:
