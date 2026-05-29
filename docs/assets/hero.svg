@@ -1,0 +1,96 @@
+<!-- brinsfield2013 hero. Vault SVG style contract (palette + dark mode). -->
+<svg width="100%" viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Brinsfield (2013) — Six Forms of Employee Silence</title>
+<desc>On a Watts–Strogatz organisational network each employee chooses VOICE or silence; when silent, a six-motive probability vector (ineffectual · relational · defensive · diffident · disengaged · deviant) is assigned by an LLM or a sign-constrained softmax. Node colours show each employee's primary silence motive.</desc>
+<style>
+  .t  { font-family: -apple-system, "Helvetica Neue", "Hiragino Sans", sans-serif; font-size: 14px; fill: #2C2C2A; }
+  .ts { font-family: -apple-system, "Helvetica Neue", "Hiragino Sans", sans-serif; font-size: 13px; fill: #444441; }
+  .tl { font-family: -apple-system, "Helvetica Neue", "Hiragino Sans", sans-serif; font-size: 12px; font-weight: 600; fill: #534AB7; letter-spacing: 2px; }
+  .title { font-family: -apple-system, "Helvetica Neue", "Hiragino Sans", sans-serif; font-size: 28px; font-weight: 600; fill: #2C2C2A; }
+  .glab { font-family: -apple-system, "Helvetica Neue", "Hiragino Sans", sans-serif; font-size: 11px; font-weight: 500; fill: #888780; letter-spacing: 0.5px; }
+  .edge  { stroke: #C7C5BD; stroke-width: 1.2; opacity: 0.75; }
+  .chord { stroke: #534AB7; stroke-width: 1.2; opacity: 0.4; stroke-dasharray: 3 3; }
+  .node  { stroke: #FAFAF8; stroke-width: 1.5; }
+  .nINEFF { fill: #534AB7; }
+  .nREL   { fill: #4C97C9; }
+  .nDEF   { fill: #0F6E56; }
+  .nDIF   { fill: #F4A259; }
+  .nDIS   { fill: #B5546A; }
+  .nDEV   { fill: #6E8B3D; }
+  .nVOICE { fill: #FAFAF8; stroke: #534AB7; stroke-width: 2.2; }
+  @media (prefers-color-scheme: dark) {
+    .t  { fill: #E5E5E2; }
+    .ts { fill: #C7C5BD; }
+    .tl { fill: #AFA9EC; }
+    .title { fill: #E5E5E2; }
+    .glab { fill: #8C8B85; }
+    .edge  { stroke: #5F5E5A; }
+    .chord { stroke: #AFA9EC; }
+    .node  { stroke: #211F1C; }
+    .nINEFF { fill: #AFA9EC; }
+    .nREL   { fill: #7FB8FF; }
+    .nDEF   { fill: #5DCAA5; }
+    .nDIF   { fill: #FFB86B; }
+    .nDIS   { fill: #E08197; }
+    .nDEV   { fill: #A6C56B; }
+    .nVOICE { fill: #211F1C; stroke: #AFA9EC; }
+  }
+</style>
+
+<!-- left: label + title -->
+<text x="40" y="56" class="tl">GENERATIVE ABM · EMPLOYEE SILENCE</text>
+<text x="40" y="92" class="title">Six Forms of</text>
+<text x="40" y="124" class="title">Employee Silence</text>
+<text x="40" y="158" class="ts">Brinsfield (2013)</text>
+<text x="40" y="182" class="t">VOICE_i ~ Bernoulli( σ(β · x_i) )</text>
+<text x="40" y="206" class="glab">motive ~ softmax over 6 Brinsfield forms</text>
+<text x="40" y="230" class="glab">EMA motive_vec on a Watts–Strogatz network</text>
+
+<!-- right: Watts–Strogatz ring network, nodes coloured by silence motive -->
+<g>
+  <!-- ring lattice edges -->
+  <line class="edge" x1="690.0" y1="60.0"  x2="737.5" y2="72.7"/>
+  <line class="edge" x1="737.5" y1="72.7"  x2="772.3" y2="107.5"/>
+  <line class="edge" x1="772.3" y1="107.5" x2="785.0" y2="155.0"/>
+  <line class="edge" x1="785.0" y1="155.0" x2="772.3" y2="202.5"/>
+  <line class="edge" x1="772.3" y1="202.5" x2="737.5" y2="237.3"/>
+  <line class="edge" x1="737.5" y1="237.3" x2="690.0" y2="250.0"/>
+  <line class="edge" x1="690.0" y1="250.0" x2="642.5" y2="237.3"/>
+  <line class="edge" x1="642.5" y1="237.3" x2="607.7" y2="202.5"/>
+  <line class="edge" x1="607.7" y1="202.5" x2="595.0" y2="155.0"/>
+  <line class="edge" x1="595.0" y1="155.0" x2="607.7" y2="107.5"/>
+  <line class="edge" x1="607.7" y1="107.5" x2="642.5" y2="72.7"/>
+  <line class="edge" x1="642.5" y1="72.7"  x2="690.0" y2="60.0"/>
+
+  <!-- rewired long-range chords (small-world shortcuts) -->
+  <line class="chord" x1="737.5" y1="72.7"  x2="642.5" y2="237.3"/>
+  <line class="chord" x1="772.3" y1="202.5" x2="607.7" y2="107.5"/>
+  <line class="chord" x1="772.3" y1="107.5" x2="595.0" y2="155.0"/>
+  <line class="chord" x1="690.0" y1="60.0"  x2="690.0" y2="250.0"/>
+
+  <!-- nodes coloured by primary silence motive -->
+  <circle class="node nINEFF" cx="690.0" cy="60.0"  r="9"/>
+  <circle class="node nREL"   cx="737.5" cy="72.7"  r="9"/>
+  <circle class="node nDEF"   cx="772.3" cy="107.5" r="9"/>
+  <circle class="node nDIF"   cx="785.0" cy="155.0" r="9"/>
+  <circle class="nVOICE"      cx="772.3" cy="202.5" r="9"/>
+  <circle class="node nINEFF" cx="737.5" cy="237.3" r="9"/>
+  <circle class="node nDIS"   cx="690.0" cy="250.0" r="9"/>
+  <circle class="node nINEFF" cx="642.5" cy="237.3" r="9"/>
+  <circle class="node nDEV"   cx="607.7" cy="202.5" r="9"/>
+  <circle class="node nREL"   cx="595.0" cy="155.0" r="9"/>
+  <circle class="node nDIF"   cx="607.7" cy="107.5" r="9"/>
+  <circle class="node nINEFF" cx="642.5" cy="72.7"  r="9"/>
+</g>
+
+<!-- legend -->
+<g>
+  <circle class="node nINEFF" cx="512" cy="282" r="5"/><text x="522" y="286" class="glab">ineffectual</text>
+  <circle class="node nREL"   cx="588" cy="282" r="5"/><text x="598" y="286" class="glab">relational</text>
+  <circle class="node nDEF"   cx="660" cy="282" r="5"/><text x="670" y="286" class="glab">defensive</text>
+  <circle class="node nDIF"   cx="732" cy="282" r="5"/><text x="742" y="286" class="glab">diffident</text>
+  <circle class="node nDIS"   cx="800" cy="282" r="5"/><text x="810" y="286" class="glab">disengaged</text>
+  <circle class="node nDEV"   cx="512" cy="298" r="5"/><text x="522" y="302" class="glab">deviant</text>
+  <circle class="nVOICE"      cx="588" cy="298" r="5"/><text x="598" y="302" class="glab">VOICE</text>
+</g>
+</svg>
