@@ -9,7 +9,7 @@
 - **Track B — 生成的 ABM**（Rust `brinsfield`，[socsim](https://github.com/akitenkrad/rs-social-simulation-tools) ライブラリ上）: Watts–Strogatz 組織ネットワーク上の 6 動機サイレンスシミュレーション．各従業員は `{ineffectual, relational, defensive, diffident, disengaged, deviant}` 上の 6 動機確率ベクトル `MotiveVec6` を持ち，EMA 学習動的で更新される．これにより Brinsfield の横断的な動機分布が定常状態として創発する．排他的な 4 つの意思決定モード `--decision-mode {llm|rule_6dim|rule_4dim|rule_3dim}` が，LLM 駆動の割当を rule ベースの softmax ablation および Knoll 4 類型 / Van Dyne 3 類型への collapse と対比する．
 - **Track A — 心理測定的レプリケーション**（Python `brinsfield-tools`）: 独立サンプルでの competing-models CFA（6 因子 vs 1–5 因子 + bifactor）．実調査データなしでも，較正済み合成データ経路でエンドツーエンド実行できる．
 
-実装範囲は Phase Status 表に示す．完全な設計は Obsidian ノート `研究/98_論文レポート/80-再現実装/Employee silence motives - Investigation of dimensionality and development of measures.md` にある．
+実装範囲は Phase Status 表に示す．
 
 ## Phase Status
 
