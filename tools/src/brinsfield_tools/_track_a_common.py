@@ -29,7 +29,7 @@ def sample_dir(output_base: str, sample: str) -> str:
     return os.path.join(output_base, sample)
 
 
-def load_sample(sample: str, output_base: str = "results/track_a") -> pd.DataFrame:
+def load_sample(sample: str, output_base: str = "data/track_a") -> pd.DataFrame:
     """Load the `loaded.csv` produced by `survey-loader` for a named sample.
 
     Raises `SystemExit` with a clear hint if the sample is missing.

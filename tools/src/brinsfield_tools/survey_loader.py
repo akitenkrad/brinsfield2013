@@ -3,7 +3,7 @@
 
 Loads a real survey CSV (`--csv`) or synthesises a plausible 30-item (6-factor)
 + 4-correlate dataset (`--synthesize-n N`) calibrated to Brinsfield Study 2/3
-anchors. Output is written to `results/track_a/<sample>/loaded.csv` and consumed
+anchors. Output is written to `data/track_a/<sample>/loaded.csv` and consumed
 by `cfa` / `reproduce`.
 
 The synthetic path is **explicitly synthetic** (a `synthetic=True` column) so it
@@ -17,6 +17,7 @@ positive) consistent with Study 4.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 
@@ -118,7 +119,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--sample", required=True, help="sample identifier")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--output-base", default="results/track_a")
+    parser.add_argument("--output-base", default="data/track_a")
     args = parser.parse_args(argv)
 
     if args.csv:
@@ -132,6 +133,23 @@ def main(argv: list[str] | None = None) -> int:
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "loaded.csv")
     df.to_csv(out_path, index=False)
+
+    # 生成条件を機械可読に残す. CSV だけでは «合成なのか実データなのか / どの seed か»
+    # がサンプルディレクトリから復元できず, 下流の CFA 結果を説明できなくなる.
+    record = {
+        "step": "survey-loader",
+        "sample": args.sample,
+        "source": "real_csv" if args.csv else "synthesized",
+        "csv": args.csv,
+        "synthesize_n": args.synthesize_n,
+        "seed": args.seed,
+        "rows": int(len(df)),
+        "cols": int(df.shape[1]),
+    }
+    with open(os.path.join(out_dir, "load_config.json"), "w", encoding="utf-8") as fh:
+        json.dump(record, fh, ensure_ascii=False, indent=2, sort_keys=True)
+        fh.write("\n")
+
     print(f"[survey-loader] wrote {out_path} ({len(df)} rows, {df.shape[1]} cols)")
     print(f"  correlates: {CORRELATE_NAMES}")
     print(f"  source: {src_msg}")

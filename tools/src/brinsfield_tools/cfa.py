@@ -11,7 +11,7 @@ Fits the family Brinsfield Study 3 contrasts, plus a bifactor extension:
   M6 : 6-factor correlated (Brinsfield Study 3 winner)
   Mbi: bifactor (general silence + 6 specific factors)
 
-Loads `results/track_a/<sample>/loaded.csv`; writes `cfa_summary.csv`. The
+Loads `data/track_a/<sample>/loaded.csv`; writes `cfa_summary.csv`. The
 synthetic loader produces a clean 6-correlated-factor structure, so M6 should
 beat M1–M5 on CFI / RMSEA / AIC / BIC (the Study 3 superiority finding).
 """
@@ -19,6 +19,7 @@ beat M1–M5 on CFI / RMSEA / AIC / BIC (the Study 3 superiority finding).
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 
@@ -146,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
         default="M1,M2,M3,M4,M5,M6,Mbi",
         help="comma-separated subset of {M1..M6, Mbi}",
     )
-    parser.add_argument("--output-base", default="results/track_a")
+    parser.add_argument("--output-base", default="data/track_a")
     args = parser.parse_args(argv)
 
     all_models = build_models()
@@ -175,6 +176,21 @@ def main(argv: list[str] | None = None) -> int:
     out_path = os.path.join(args.output_base, args.sample, "cfa_summary.csv")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     out.to_csv(out_path, index=False)
+
+    # 実行条件を機械可読に残す (どのモデル集合を何行に当てはめたか).
+    record = {
+        "step": "cfa",
+        "sample": args.sample,
+        "models": chosen,
+        "fitted_rows": int(len(data)),
+        "item_columns": item_cols,
+    }
+    with open(
+        os.path.join(args.output_base, args.sample, "cfa_config.json"), "w", encoding="utf-8"
+    ) as fh:
+        json.dump(record, fh, ensure_ascii=False, indent=2, sort_keys=True)
+        fh.write("\n")
+
     print(out.to_string(index=False))
     print()
 

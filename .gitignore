@@ -14,6 +14,10 @@ dist/
 # Simulation outputs
 results/
 
+# Track A の派生データ (survey-loader が生成するサンプル別ワークスペース;
+# 実行ごとの出力ではなく再生成可能な中間データなので results/ ではなくここに置く)
+data/track_a/
+
 # LLM prompt cache (prompt -> response; pseudo-determinism mechanism)
 .llm_cache/
 runs/

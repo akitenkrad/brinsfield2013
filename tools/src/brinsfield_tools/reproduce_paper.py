@@ -110,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--sample", default="synth")
     parser.add_argument("--synthesize-n", type=int, default=300)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--output-base", default="results/track_a")
+    parser.add_argument("--output-base", default="data/track_a")
     parser.add_argument(
         "--track-b-dir",
         default=None,
