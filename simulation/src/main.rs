@@ -157,7 +157,7 @@ struct AblateArgs {
     t_max: u64,
     #[arg(long, default_value_t = 42)]
     seed: u64,
-    #[arg(long, default_value = "results/ablation")]
+    #[arg(long, default_value = "results")]
     output_dir: String,
 }
 
@@ -498,7 +498,11 @@ fn cmd_ablate(args: AblateArgs) {
         .filter(|t| !t.is_empty())
         .map(|t| parse_decision_mode(t).unwrap_or_else(|e| panic!("{e}")))
         .collect();
-    fs::create_dir_all(&args.output_dir).expect("failed to create ablation dir");
+    // 出力先はタイムスタンプ付きにする. 固定名 (旧 results/ablation) では
+    // 再実行のたびに ablation_summary.csv が上書きされ, 過去の結果が失われた.
+    let timestamp = timestamp();
+    let output_dir = format!("{}/{}_ablation", args.output_dir, timestamp);
+    fs::create_dir_all(&output_dir).expect("failed to create ablation dir");
 
     println!("=== brinsfield-ablate ===");
     println!(
@@ -508,7 +512,7 @@ fn cmd_ablate(args: AblateArgs) {
         args.t_max,
         args.seed,
     );
-    println!("output: {}", args.output_dir);
+    println!("output: {output_dir}");
     println!("------------------------------------------------------------");
 
     let mut rows: Vec<AblateRow> = Vec::new();
@@ -560,8 +564,21 @@ fn cmd_ablate(args: AblateArgs) {
         );
     }
 
-    let path = format!("{}/ablation_summary.csv", args.output_dir);
+    let path = format!("{output_dir}/ablation_summary.csv");
     write_csv(&rows, &path).expect("failed to write ablation_summary.csv");
+
+    // 実験条件を機械可読に残す (CSV だけでは何を振ったのか復元できない).
+    let config_json = serde_json::json!({
+        "subcommand": "ablate",
+        "decision_modes": modes.iter().map(|m| m.label()).collect::<Vec<_>>(),
+        "n_teams": args.n_teams,
+        "team_size": args.team_size,
+        "runs": args.runs,
+        "t_max": args.t_max,
+        "seed": args.seed,
+    });
+    write_json(&config_json, format!("{output_dir}/config.json"))
+        .expect("failed to write config.json");
     println!("------------------------------------------------------------");
     println!("ablation done. summary → {path}");
 }
@@ -587,6 +604,12 @@ fn cmd_reproduce(args: ReproduceArgs) {
     let result = run(&cfg).unwrap_or_else(|e| panic!("reproduce run failed: {e}"));
     save_metrics(&result, &output_dir);
     save_motive_mix(&result, &output_dir);
+    // 実験条件を機械可読に残す (run/sweep と同じ形式; reproduce だけ欠けていた).
+    write_json(
+        &cfg.to_run_config_json(),
+        format!("{output_dir}/config.json"),
+    )
+    .expect("failed to write config.json");
 
     // Average the steady-state (t >= t_max/2) motive_mix.
     let half = args.t_max / 2;
