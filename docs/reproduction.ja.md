@@ -2,11 +2,18 @@
 
 [English](reproduction.md) | [日本語](reproduction.ja.md)
 
-Brinsfield (2013) Study 1–4 のアンカーとシミュレーション出力の対応（設計 §5）．アンカーは `simulation/src/calibration.rs` にある．
+Brinsfield (2013) Study 1–4 のアンカーとシミュレーション出力の対応（設計 §5）．アンカーは
+`simulation/src/calibration.rs` にある．
+
+このうち run の `reference.csv` に書くのは defensive 12.65% の 1 行だけである．原著が
+印字した数であり，かつ run が `motive_mix_defensive` として測っている同じ量だからである．
+`kl_to_reference` の基準分布は書かない — 原著が印字した分布ではなく，Study 1 の記述から
+本設計書が組み立てたものである．±3% の帯・ineffectual 下限・deviant 上限も書かない．
+こちらが決めた判定基準なので，`calibration.rs` とコンソールに残す．
 
 | アンカー | 論文値 | 再現箇所 | 出力 |
 |--------|--------|---------|------|
-| Study 1 — 全沈黙中の defensive 比率 | 12.65%（288/2277） | ABM 定常 | `motive_mix.csv` defensive 列；`reproduce` defensive 判定 |
+| Study 1 — 全沈黙中の defensive 比率 | 12.65%（288/2277） | ABM 定常 | `metrics.csv` の `motive_mix_defensive` / `steady_state_motive_mix_defensive`；`reference.csv`；`reproduce` defensive 判定 |
 | Study 1 — ineffectual が最頻 | item 48 報告 230 回 | ABM 定常 | `reproduce` ineffectual 下限（≥ .30） |
 | Study 1 — deviant が稀 | 0.48% | ABM 定常 | `reproduce` deviant 上限（≤ .08） |
 | Study 2 — EFA 全分散 | 58.27% | Track A（CFA 代理） | `cfa` 適合度 |
@@ -14,9 +21,9 @@ Brinsfield (2013) Study 1–4 のアンカーとシミュレーション出力�
 | Study 3 — 6 因子 RMSEA | .087 | Track A | `cfa_summary.csv` M6 RMSEA |
 | Study 3 — 6 因子の 1–5 因子優位 | M6 が最良 AIC/BIC | Track A | `cfa` 優位判定 |
 | Study 4 — VOICE への ΔR²（rel/def/ineff/diseng） | .05/.05/.04/.03 | Track A（合成） | `reproduce` ΔR² 表 |
-| Study 4 — ψ → defensive/diffident/relational | 負 | ABM 相関 | `correlations.csv` |
-| Study 4 — 神経症 → deviant/diffident | 正 | ABM 相関 | `correlations.csv` |
-| ABM — competing-model KL | 6 次元 < 4 次元 < 3 次元 | `ablate` | `ablation_summary.csv` |
+| Study 4 — ψ → defensive/diffident/relational | 負 | ABM 相関 | `metrics.csv` の run スコープ指標 `corr_<動機>_psafety` |
+| Study 4 — 神経症 → deviant/diffident | 正 | ABM 相関 | `metrics.csv` の run スコープ指標 `corr_<動機>_neuroticism` |
+| ABM — competing-model KL | 6 次元 < 4 次元 < 3 次元 | `ablate` | 各 `ablate-point` 子 run の `mean_kl_to_reference` |
 
 ## 一括再現
 

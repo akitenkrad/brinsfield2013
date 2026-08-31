@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """visualize_sweep.py — sweep visualization for the Brinsfield 2013 silence model.
 
-Reads `results/<timestamp>_sweep/sweep_summary.csv` and produces:
+掃引親 run を読んで次の 3 枚を出す:
   - sweep_defensive_heatmap.png : ψ_learn × p_retaliate heatmap of motive_mix_defensive
   - sweep_kl_contour.png        : motive_init_defensive × p_retaliate KL-to-reference contour
   - sweep_motive_response.png   : motive shares vs motive_init_defensive
 
+runvault は «1 行 1 試行» の表をディスクに持たない．`runs.sweep_summary_table` が
+子 run (`sweep-point`) の `parameters` と `events.jsonl` の `terminal` 行から，旧
+`sweep_summary.csv` と同じ列の表を組み直す．legacy な `results/<ts>_sweep/` を
+`--results-dir` に渡せば，その中の CSV をそのまま読む．
+
 Usage:
     uv run brinsfield-tools visualize-sweep
-    uv run brinsfield-tools visualize-sweep --results-dir results/<ts>_sweep
+    uv run brinsfield-tools visualize-sweep --results-dir results/20260529_143336_sweep
 """
 
 from __future__ import annotations
@@ -16,12 +21,17 @@ from __future__ import annotations
 import argparse
 import os
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+
+from brinsfield_tools import runs  # noqa: E402
 
 COLOR_BG = "#FAFAF8"
-MOTIVES = ["ineffectual", "relational", "defensive", "diffident", "disengaged", "deviant"]
+MOTIVES = runs.MOTIVES
 MOTIVE_COLORS = ["#534AB7", "#4C97C9", "#0F6E56", "#F4A259", "#B5546A", "#6E8B3D"]
 
 
@@ -101,17 +111,26 @@ def plot_motive_response(df: pd.DataFrame, output_dir: str) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="brinsfield-tools visualize-sweep")
-    parser.add_argument("--results-dir", default="results/latest")
-    parser.add_argument("--output-dir", default=None)
+    parser.add_argument(
+        "--results-dir",
+        "--results_dir",
+        default=None,
+        help="掃引親 run のディレクトリ (省略時は runvault path が返す直近の sweep)",
+    )
+    parser.add_argument("--results-root", "--results_root", default="results")
+    parser.add_argument("--output-dir", "--output_dir", default=None)
     args = parser.parse_args(argv)
-    results_dir = args.results_dir
-    output_dir = args.output_dir or results_dir
-    os.makedirs(output_dir, exist_ok=True)
-    sweep_path = os.path.join(results_dir, "sweep_summary.csv")
-    if not os.path.exists(sweep_path):
-        print(f"[visualize-sweep] no sweep summary at {sweep_path}; nothing to plot")
+
+    sweep_dir = runs.resolve_run_dir(
+        args.results_dir, subcommand="sweep", results_root=args.results_root
+    )
+    output_dir = str(runs.analysis_output_dir(sweep_dir, args.output_dir))
+    print(f"[visualize-sweep] sweep: {sweep_dir}")
+
+    df = runs.sweep_summary_table(sweep_dir)
+    if df.empty:
+        print("[visualize-sweep] no trials in this sweep; nothing to plot")
         return
-    df = pd.read_csv(sweep_path)
     _ = np  # numpy reserved for future contour smoothing
     plot_defensive_heatmap(df, output_dir)
     plot_kl_contour(df, output_dir)

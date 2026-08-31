@@ -2,7 +2,8 @@
 Brinsfield (2013) six-motive employee-silence replication.
 
 Track B (ABM visualization): `visualize`, `visualize_sweep`,
-`show_experiment_settings`.
+`show_experiment_settings`．どの run を読むかと，旧 CSV と同じ形の表をどう組み直すかは
+`runs` が持つ (出力の置き場と同一性は runvault にある)．
 
 Track A (psychometric replication): `survey_loader` (with a calibrated
 `--synthesize-n` path), `cfa` (semopy 6-factor vs 1–5-factor + bifactor),

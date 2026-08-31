@@ -11,3 +11,4 @@ members = ["tools"]
 
 [tool.uv.sources]
 brinsfield-tools = { workspace = true }
+runvault = { git = "https://github.com/akitenkrad/rs-runvault", subdirectory = "python" }

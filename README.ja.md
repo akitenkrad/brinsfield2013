@@ -16,7 +16,18 @@ LLM 出力は socsim の bit 再現性の **外側** にあるため，設計を
 - **決定論的 socsim コア** — 従業員初期化・Watts–Strogatz ネットワーク・スケジューリング・非意思決定 mechanism・3 つの `rule_*` モード．seed 固定で bit 完全再現（`rule_*` は LLM 呼び出し 0 回）．
 - **非決定論的 LLM 層** — `voice_decision` のみ．`socsim-llm` の `CachingClient`・`temperature=0`・`(agent_id, t)` 由来 seed で擬似決定論化．プロバイダ順は **Ollama 第一 → OpenAI フォールバック**．
 
-各 run は `llm_meta.json` に決定モード / model / endpoint / 温度 / seed / cache-hit 率を記録する．
+## 出力の置き場
+
+run ディレクトリの作成・命名・同一性は
+[runvault](https://github.com/akitenkrad/rs-runvault) が持つ．どのサブコマンドも
+`<--output-dir>/brinsfield-silence/` の下に書き，自前のタイムスタンプ付きディレクトリも
+`results/latest` シンボリックリンクも作らない．run 1 本には `config.json`（条件），
+`metrics.csv`（ステップごとの指標と run スコープの指標），`events.jsonl`（従業員ごとの
+最終状態，掃引・アブレーションの試行），`reference.csv`（原著の defensive 12.65%），
+`manifest.csv` が入る．LLM モードでは実際に答えたモデルが `run.json` の `llm` ブロックに，
+呼び出し数と cache-hit が run スコープ指標 `llm_calls` / `llm_cache_hits` /
+`llm_cache_hit_rate` に載る．rule モードにはどちらも無いので，`none` というモデルを
+名乗ることはない．
 
 ## インストールとクイックスタート
 
@@ -44,7 +55,7 @@ uv sync
 uv run brinsfield-tools survey-loader --synthesize-n 300 --sample synth
 uv run brinsfield-tools cfa --sample synth          # 6 因子が 1–5 因子に優位
 uv run brinsfield-tools reproduce --sample synth    # 一括再現
-uv run brinsfield-tools visualize --results-dir results/latest
+uv run brinsfield-tools visualize
 ```
 
 ## 再現したアンカー

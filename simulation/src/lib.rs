@@ -19,6 +19,10 @@
 //! the EMA [`mechanisms::MotiveDynamics`] that lets the cross-sectional Brinsfield
 //! distribution emerge as a learning-dynamic steady state. See `main.rs` for the
 //! `run` / `sweep` / `ablate` / `reproduce` CLI.
+//!
+//! Where the output goes and how a run is identified belong to
+//! [runvault](https://github.com/akitenkrad/rs-runvault); [`record`] holds the
+//! mapping from this model's quantities onto a run directory.
 
 pub mod calibration;
 pub mod config;
@@ -27,5 +31,6 @@ pub mod mechanisms;
 pub mod metrics;
 pub mod motives;
 pub mod prompts;
+pub mod record;
 pub mod simulation;
 pub mod world;

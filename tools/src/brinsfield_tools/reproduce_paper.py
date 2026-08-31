@@ -6,8 +6,8 @@ End-to-end on the synthetic Track A path (no real data required):
   1. synthesise a calibrated N-row sample (if not already present),
   2. fit the competing CFA family and confirm 6-factor superiority,
   3. report the motive distribution + defensive 12.65% anchor (from a Track B
-     ABM `metrics.csv` if `--track-b-dir` is given, else from the synthetic
-     factor-score prevalences),
+     ABM run if `--track-b-dir` is given, else from the synthetic factor-score
+     prevalences),
   4. reconcile the Study 4 incremental-validity ΔR² for VOICE per motive.
 
 Writes `three_way_comparison.csv` to the sample directory.
@@ -22,6 +22,7 @@ import sys
 import numpy as np
 import pandas as pd
 
+from brinsfield_tools import runs
 from brinsfield_tools._track_a_common import (
     ITEMS_PER_SUBSCALE,
     SUBSCALES,
@@ -114,7 +115,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--track-b-dir",
         default=None,
-        help="optional ABM results dir with metrics.csv (for the emergent motive mix)",
+        help="optional ABM run directory (runvault の run，または legacy な "
+             "results/<timestamp>/) — 定常の創発動機分布を読む",
     )
     args = parser.parse_args(argv)
 
@@ -147,7 +149,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # 2. Motive distribution (ABM emergent if provided, else synthetic prevalence).
     if args.track_b_dir and os.path.exists(os.path.join(args.track_b_dir, "metrics.csv")):
-        m = pd.read_csv(os.path.join(args.track_b_dir, "metrics.csv"))
+        # runvault の long な metrics.csv も legacy な wide の CSV も
+        # `runs.step_metrics` が «1 ステップ 1 行» に揃える．
+        m = runs.step_metrics(args.track_b_dir)
         tail = m[m["t"] >= m["t"].max() // 2]
         prevalence = {sub: float(tail[f"motive_mix_{sub}"].mean()) for sub in SUBSCALES}
         src = f"ABM {args.track_b_dir}"

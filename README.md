@@ -16,7 +16,18 @@ LLM output is **outside** socsim's bit-reproducibility, so the design splits int
 - **Deterministic socsim core** — employee init, Watts–Strogatz network, scheduling, the non-decision mechanisms, and all three `rule_*` decision modes. Given a seed this reproduces bit-for-bit (`rule_*` make **zero LLM calls**).
 - **Non-deterministic LLM layer** — `voice_decision` only. Pseudo-determinised by `socsim-llm`'s `CachingClient`, `temperature=0`, and a fixed `(agent_id, t)`-derived seed. Provider order is **Ollama first → OpenAI fallback**.
 
-Each run writes `llm_meta.json` recording decision mode / model / endpoint / temperature / seed / cache-hit rate.
+## Where the output goes
+
+Run directories, their naming and their identity belong to
+[runvault](https://github.com/akitenkrad/rs-runvault): every subcommand writes under
+`<--output-dir>/brinsfield-silence/`, and there is no timestamped directory or
+`results/latest` symlink of our own. A run holds `config.json` (the conditions),
+`metrics.csv` (per-step and run-scope metrics), `events.jsonl` (per-employee final
+state; sweep and ablation trials), `reference.csv` (the paper's 12.65% defensive
+share) and `manifest.csv`. For an LLM run the model that answered is in the `run.json`
+`llm` block, and the call counts are the run-scope metrics `llm_calls` /
+`llm_cache_hits` / `llm_cache_hit_rate`; a rule-mode run has neither, so it never
+claims a model called `none`.
 
 ## Install & Quick start
 
@@ -44,7 +55,7 @@ uv sync
 uv run brinsfield-tools survey-loader --synthesize-n 300 --sample synth
 uv run brinsfield-tools cfa --sample synth          # 6-factor beats 1–5-factor
 uv run brinsfield-tools reproduce --sample synth    # one-command reproduction
-uv run brinsfield-tools visualize --results-dir results/latest
+uv run brinsfield-tools visualize
 ```
 
 ## Reproduced anchors

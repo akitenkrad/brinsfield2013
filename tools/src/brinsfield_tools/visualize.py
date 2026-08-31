@@ -1,25 +1,38 @@
 #!/usr/bin/env python3
 """visualize.py — single-run visualization for the Brinsfield 2013 silence model.
 
-Reads `results/latest` (or `--results-dir`) and produces:
+runvault の run ディレクトリを読んで次の 3 枚を出す:
   - motive_mix_stack.png       : 6-region stacked motive-mix time series
   - silence_kl_timeseries.png  : silence rate + KL(mix || reference) per step
   - motive_correlate_bar.png   : final-step Pearson r (motive × ψ / neuroticism)
 
+`--results-dir` を省略すると `runvault path --experiment brinsfield-silence --latest
+--subcommand run` が返す run ディレクトリを対象にする (`runvault` が PATH にあるか，
+環境変数 `RUNVAULT` が実行ファイルを指している必要がある)．legacy な
+`results/<timestamp>/` を直接渡すこともできる．
+
+図は run の外 (`<results-root>/brinsfield-silence/figures/<run_slug>/`) に出す．
+run が終わった後に作るものは `manifest.csv` に載らないので，run ディレクトリの中には
+置かない．
+
 Usage:
     uv run brinsfield-tools visualize
-    uv run brinsfield-tools visualize --results-dir results/latest --output-dir out
+    uv run brinsfield-tools visualize --results-dir results/20260529_143329   # legacy も可
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import os
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+
+from brinsfield_tools import runs  # noqa: E402
 
 COLOR_BG = "#FAFAF8"
 # Six categorical motive colours (repo palette + two extra hues).
@@ -31,31 +44,11 @@ MOTIVE_COLORS = {
     "disengaged": "#B5546A",   # rose
     "deviant": "#6E8B3D",      # olive
 }
-MOTIVES = ["ineffectual", "relational", "defensive", "diffident", "disengaged", "deviant"]
+MOTIVES = runs.MOTIVES
 
 
-def load_config(results_dir: str) -> dict | None:
-    path = os.path.join(results_dir, "config.json")
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
-    return None
-
-
-def plot_motive_stack(results_dir: str, output_dir: str, cfg: dict | None) -> None:
-    path = os.path.join(results_dir, "motive_mix.csv")
-    if not os.path.exists(path):
-        path = os.path.join(results_dir, "metrics.csv")
-        if not os.path.exists(path):
-            print(f"[visualize] no motive_mix/metrics at {results_dir}; skipping stack")
-            return
-        df = pd.read_csv(path)
-        cols = [f"motive_mix_{m}" for m in MOTIVES]
-        data = {m: df[c] for m, c in zip(MOTIVES, cols)}
-    else:
-        df = pd.read_csv(path)
-        data = {m: df[m] for m in MOTIVES}
-
+def plot_motive_stack(df: pd.DataFrame, output_dir: str, cfg: dict | None) -> None:
+    data = {m: df[f"motive_mix_{m}"] for m in MOTIVES}
     fig, ax = plt.subplots(figsize=(9, 5))
     fig.patch.set_facecolor(COLOR_BG)
     ax.stackplot(
@@ -81,11 +74,7 @@ def plot_motive_stack(results_dir: str, output_dir: str, cfg: dict | None) -> No
     print(f"[visualize] wrote {out}")
 
 
-def plot_silence_kl(results_dir: str, output_dir: str) -> None:
-    path = os.path.join(results_dir, "metrics.csv")
-    if not os.path.exists(path):
-        return
-    df = pd.read_csv(path)
+def plot_silence_kl(df: pd.DataFrame, output_dir: str) -> None:
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
     fig.patch.set_facecolor(COLOR_BG)
     ax1.plot(df["t"], df["silence_rate"], color="#444444", lw=2, label="silence rate")
@@ -108,21 +97,26 @@ def plot_silence_kl(results_dir: str, output_dir: str) -> None:
     print(f"[visualize] wrote {out}")
 
 
-def plot_motive_correlate_bar(results_dir: str, output_dir: str) -> None:
-    path = os.path.join(results_dir, "correlations.csv")
-    if not os.path.exists(path):
+def plot_motive_correlate_bar(corr: pd.DataFrame, output_dir: str) -> None:
+    """動機 × correlate の Pearson r．
+
+    移行前は `correlations.csv` の 1 行だった値が，run スコープの指標
+    `corr_<motive>_<correlate>` になっている (run 全体で 1 つしか無い値なので `step`
+    を持たない)．`runs.correlations` が旧 CSV と同じ 3 列に戻す．
+    """
+    if corr.empty:
+        print("[visualize] no motive × correlate correlations; skipping")
         return
-    df = pd.read_csv(path)
     fig, ax = plt.subplots(figsize=(9, 4.5))
     fig.patch.set_facecolor(COLOR_BG)
     x = np.arange(len(MOTIVES))
     width = 0.4
-    for offset, corr, color in [(-width / 2, "psafety", "#4C97C9"), (width / 2, "neuroticism", "#B5546A")]:
+    for offset, name, color in [(-width / 2, "psafety", "#4C97C9"), (width / 2, "neuroticism", "#B5546A")]:
         rs = []
         for m in MOTIVES:
-            sub = df[(df["motive"] == m) & (df["correlate"] == corr)]
+            sub = corr[(corr["motive"] == m) & (corr["correlate"] == name)]
             rs.append(float(sub["pearson_r"].iloc[0]) if not sub.empty else 0.0)
-        ax.bar(x + offset, rs, width, label=f"r(motive, {corr})", color=color, alpha=0.85)
+        ax.bar(x + offset, rs, width, label=f"r(motive, {name})", color=color, alpha=0.85)
     ax.axhline(0.0, color="gray", lw=0.6)
     ax.set_xticks(x)
     ax.set_xticklabels(MOTIVES, rotation=20, ha="right")
@@ -139,16 +133,27 @@ def plot_motive_correlate_bar(results_dir: str, output_dir: str) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="brinsfield-tools visualize")
-    parser.add_argument("--results-dir", default="results/latest")
-    parser.add_argument("--output-dir", default=None)
+    parser.add_argument(
+        "--results-dir",
+        "--results_dir",
+        default=None,
+        help="run ディレクトリ (省略時は runvault path が返す直近の run)",
+    )
+    parser.add_argument("--results-root", "--results_root", default="results")
+    parser.add_argument("--output-dir", "--output_dir", default=None)
     args = parser.parse_args(argv)
-    results_dir = args.results_dir
-    output_dir = args.output_dir or results_dir
-    os.makedirs(output_dir, exist_ok=True)
-    cfg = load_config(results_dir)
-    plot_motive_stack(results_dir, output_dir, cfg)
-    plot_silence_kl(results_dir, output_dir)
-    plot_motive_correlate_bar(results_dir, output_dir)
+
+    run_dir = runs.resolve_run_dir(
+        args.results_dir, subcommand="run", results_root=args.results_root
+    )
+    output_dir = str(runs.analysis_output_dir(run_dir, args.output_dir))
+    print(f"[visualize] run: {run_dir}")
+
+    df = runs.step_metrics(run_dir)
+    cfg = runs.parameters(run_dir)
+    plot_motive_stack(df, output_dir, cfg)
+    plot_silence_kl(df, output_dir)
+    plot_motive_correlate_bar(runs.correlations(run_dir), output_dir)
 
 
 if __name__ == "__main__":

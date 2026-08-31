@@ -6,7 +6,7 @@
 
 ```bash
 cargo run --release -- run --decision-mode rule_6dim --t-max 48 --runs 3 --seed 42
-uv run brinsfield-tools visualize --results-dir results/latest
+uv run brinsfield-tools visualize
 ```
 
 Inspect `motive_mix_stack.png` for the six-region motive time series and `silence_kl_timeseries.png` for the silence rate and KL-to-reference trajectory.
@@ -27,7 +27,7 @@ cargo run --release -- sweep \
     --p-retaliate 0.02,0.05,0.10 \
     --motive-init-defensive 0.05,0.10,0.15,0.20 \
     --runs 30
-uv run brinsfield-tools visualize-sweep --results-dir results/latest
+uv run brinsfield-tools visualize-sweep
 ```
 
 `sweep_defensive_heatmap.png` shows how the steady-state defensive share responds to ψ-learning and retaliation; `sweep_motive_response.png` shows the basin of attraction around the 12.65% anchor.
@@ -41,7 +41,15 @@ cargo run --release -- run --decision-mode llm \
     --llm-cache-path runs/brinsfield_cache.json --temperature 0.0 --t-max 48 --runs 5
 ```
 
-Re-running with the same arguments replays from the warm cache (cache-hit ≈ 100%, recorded in `llm_meta.json`).
+Re-running with the same arguments replays from the warm cache (cache-hit ≈ 100%,
+recorded as the run-scope metrics `llm_calls` / `llm_cache_hits` /
+`llm_cache_hit_rate`; the model that answered is in the `run.json` `llm` block).
+
+To exercise the same path with no live model at all:
+
+```bash
+cargo run --example mock_smoke -- results
+```
 
 ## 5. Empirical 6-factor reproduction (synthetic data)
 

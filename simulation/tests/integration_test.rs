@@ -24,7 +24,6 @@ fn small_cfg(mode: DecisionMode) -> Config {
         decision_mode: mode,
         motive_init: MotiveInit::default(),
         llm: LlmSettings::default(),
-        output_dir: "results".to_string(),
         ..Config::default()
     }
 }

@@ -45,7 +45,7 @@ pub const RNG_PROMPT_ROOT: u64 = 3;
 // Result containers + rows
 // --------------------------------------------------------------------------- //
 
-/// Per-step metrics row written to `metrics.csv`.
+/// Per-step metrics; each numeric field becomes one step metric in `metrics.csv`.
 #[derive(Debug, Clone, Serialize)]
 pub struct MetricsRow {
     pub t: u64,
@@ -69,19 +69,7 @@ pub struct MetricsRow {
     pub kl_to_reference: f64,
 }
 
-/// Per-(t, ineffectual..deviant) motive_mix row written to `motive_mix.csv`.
-#[derive(Debug, Clone, Serialize)]
-pub struct MotiveMixRow {
-    pub t: u64,
-    pub ineffectual: f64,
-    pub relational: f64,
-    pub defensive: f64,
-    pub diffident: f64,
-    pub disengaged: f64,
-    pub deviant: f64,
-}
-
-/// Per-agent end-of-run state row written to `agents.csv`.
+/// Per-agent end-of-run state, written as an `x.brinsfield2013.agent` event.
 #[derive(Debug, Clone, Serialize)]
 pub struct AgentRow {
     pub t: u64,
@@ -105,7 +93,8 @@ pub struct AgentRow {
     pub private_concern: f64,
 }
 
-/// Per-(motive, correlate) correlation row written to `correlations.csv`.
+/// Per-(motive, correlate) correlation, written as the run-scope metric
+/// `corr_<motive>_<correlate>`.
 #[derive(Debug, Clone, Serialize)]
 pub struct CorrelationRow {
     pub motive: String,
@@ -118,7 +107,6 @@ pub struct SimulationResult {
     pub final_round: u64,
     pub world: SilenceWorld,
     pub metrics_rows: Vec<MetricsRow>,
-    pub motive_mix_rows: Vec<MotiveMixRow>,
     pub agent_rows: Vec<AgentRow>,
     pub correlation_rows: Vec<CorrelationRow>,
     pub metadata: MetadataCollector,
@@ -262,7 +250,6 @@ pub fn run_with_client(
     let mut sim = builder.build();
 
     let mut metrics_rows: Vec<MetricsRow> = Vec::new();
-    let mut motive_mix_rows: Vec<MotiveMixRow> = Vec::new();
     let mut final_round = 0u64;
 
     sim.run_observed(|report| {
@@ -290,15 +277,6 @@ pub fn run_with_client(
             org_performance: world.org_performance,
             issue_salience: world.issue_salience,
             kl_to_reference: kl_to_reference(mm),
-        });
-        motive_mix_rows.push(MotiveMixRow {
-            t,
-            ineffectual: mm[0],
-            relational: mm[1],
-            defensive: mm[2],
-            diffident: mm[3],
-            disengaged: mm[4],
-            deviant: mm[5],
         });
         final_round = t;
     })
@@ -354,7 +332,6 @@ pub fn run_with_client(
         final_round,
         world: final_world,
         metrics_rows,
-        motive_mix_rows,
         agent_rows,
         correlation_rows,
         metadata,
@@ -415,74 +392,6 @@ fn build_correlation_rows(world: &SilenceWorld) -> Vec<CorrelationRow> {
         }
     }
     rows
-}
-
-// --------------------------------------------------------------------------- //
-// Output writers
-// --------------------------------------------------------------------------- //
-
-pub fn ensure_output_dir(output_dir: &str) {
-    socsim_results::ensure_dir(output_dir).expect("failed to create output directory");
-}
-
-pub fn save_metrics(result: &SimulationResult, output_dir: &str) {
-    let path = format!("{output_dir}/metrics.csv");
-    socsim_results::write_csv(&result.metrics_rows, &path).expect("failed to write metrics.csv");
-}
-
-pub fn save_motive_mix(result: &SimulationResult, output_dir: &str) {
-    let path = format!("{output_dir}/motive_mix.csv");
-    socsim_results::write_csv(&result.motive_mix_rows, &path)
-        .expect("failed to write motive_mix.csv");
-}
-
-pub fn save_agents(result: &SimulationResult, output_dir: &str) {
-    let path = format!("{output_dir}/agents.csv");
-    socsim_results::write_csv(&result.agent_rows, &path).expect("failed to write agents.csv");
-}
-
-pub fn save_correlations(result: &SimulationResult, output_dir: &str) {
-    let path = format!("{output_dir}/correlations.csv");
-    socsim_results::write_csv(&result.correlation_rows, &path)
-        .expect("failed to write correlations.csv");
-}
-
-/// `llm_meta.json` (model / endpoint / temperature / seed / cache stats).
-#[derive(Serialize)]
-pub struct LlmMetaJson {
-    pub decision_mode: String,
-    pub llm_model: String,
-    pub llm_endpoint: String,
-    pub llm_temperature: f32,
-    pub llm_seed: u64,
-    pub prompt_version: u8,
-    pub total_calls: usize,
-    pub cache_hits: usize,
-    pub cache_hit_rate: f64,
-    pub final_round: u64,
-    pub determinism_note: &'static str,
-}
-
-pub fn save_llm_meta(result: &SimulationResult, cfg: &Config, output_dir: &str) {
-    let meta = LlmMetaJson {
-        decision_mode: cfg.decision_mode.label().to_string(),
-        llm_model: result.llm_model.clone(),
-        llm_endpoint: result.llm_endpoint.clone(),
-        llm_temperature: cfg.llm.temperature,
-        llm_seed: cfg.llm.seed,
-        prompt_version: cfg.prompt_version,
-        total_calls: result.metadata.total(),
-        cache_hits: result.metadata.cache_hits(),
-        cache_hit_rate: result.metadata.cache_hit_rate(),
-        final_round: result.final_round,
-        determinism_note: "LLM output is outside socsim bit-reproducibility; the prompt->response \
-                           cache (temperature=0 + (agent_id, t)-derived seed) is the reproducibility \
-                           mechanism. The socsim core (employee init, network, scheduling, the \
-                           non-LLM mechanisms) is deterministic given the seed. The rule_* decision \
-                           modes make zero LLM calls and are bit-reproducible.",
-    };
-    let path = format!("{output_dir}/llm_meta.json");
-    socsim_results::write_json(&meta, &path).expect("failed to write llm_meta.json");
 }
 
 #[cfg(test)]

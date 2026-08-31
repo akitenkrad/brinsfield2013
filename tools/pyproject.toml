@@ -10,6 +10,8 @@ dependencies = [
     "pillow>=10.0",
     "pyyaml>=6.0",
     "socsim-tools",
+    # run ディレクトリの解決と読み出し (`runvault path` / `runvault.read`)．
+    "runvault[read]",
     # Psychometric tooling for the Track A CFA path. Available without real
     # survey data via the survey-loader `--synthesize-n` calibrated synth path.
     "factor-analyzer>=0.5",

@@ -6,7 +6,7 @@
 
 ```bash
 cargo run --release -- run --decision-mode rule_6dim --t-max 48 --runs 3 --seed 42
-uv run brinsfield-tools visualize --results-dir results/latest
+uv run brinsfield-tools visualize
 ```
 
 `motive_mix_stack.png` で 6 領域積上げの動機時系列を，`silence_kl_timeseries.png` で沈黙率と KL-to-reference の軌跡を確認する．
@@ -27,7 +27,7 @@ cargo run --release -- sweep \
     --p-retaliate 0.02,0.05,0.10 \
     --motive-init-defensive 0.05,0.10,0.15,0.20 \
     --runs 30
-uv run brinsfield-tools visualize-sweep --results-dir results/latest
+uv run brinsfield-tools visualize-sweep
 ```
 
 `sweep_defensive_heatmap.png` は定常 defensive 比率の ψ 学習・報復への応答を，`sweep_motive_response.png` は 12.65% アンカー周りの引込み域を示す．
@@ -41,7 +41,15 @@ cargo run --release -- run --decision-mode llm \
     --llm-cache-path runs/brinsfield_cache.json --temperature 0.0 --t-max 48 --runs 5
 ```
 
-同一引数で再実行すると warm cache から再生する（cache-hit ≈ 100%，`llm_meta.json` に記録）．
+同一引数で再実行すると warm cache から再生する（cache-hit ≈ 100%）．呼び出し数と
+cache-hit は run スコープ指標 `llm_calls` / `llm_cache_hits` / `llm_cache_hit_rate`，
+実際に答えたモデルは `run.json` の `llm` ブロックに記録される．
+
+実 LLM 無しで同じ経路を走らせるには:
+
+```bash
+cargo run --example mock_smoke -- results
+```
 
 ## 5. 実証側 6 因子再現（合成データ）
 

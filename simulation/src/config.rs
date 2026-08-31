@@ -291,9 +291,6 @@ pub struct Config {
 
     // ── LLM settings (used iff `decision_mode == Llm`) ─────────────────────
     pub llm: LlmSettings,
-
-    // ── output ─────────────────────────────────────────────────────────────
-    pub output_dir: String,
 }
 
 impl Default for Config {
@@ -319,7 +316,6 @@ impl Default for Config {
             runs: 1,
             seed: 42,
             llm: LlmSettings::default(),
-            output_dir: "results".to_string(),
         }
     }
 }
@@ -328,69 +324,6 @@ impl Config {
     /// Total number of employees.
     pub fn n_employees(&self) -> usize {
         self.n_teams.saturating_mul(self.team_size)
-    }
-}
-
-/// JSON representation of a `run`'s `config.json`.
-#[derive(Serialize)]
-pub struct RunConfigJson {
-    pub command: &'static str,
-    pub n_teams: usize,
-    pub team_size: usize,
-    pub n_levels: u8,
-    pub n_employees: usize,
-    pub network_kind: NetworkKind,
-    pub network_k: usize,
-    pub network_beta: f64,
-    pub supervisor_homogeneity: f64,
-    pub decision_mode: DecisionMode,
-    pub prompt_version: u8,
-    pub motive_init: MotiveInit,
-    pub beta: BetaGroup,
-    pub motive_learn_rate: f64,
-    pub psafety_learn: f64,
-    pub p_retaliate: f64,
-    pub shock_t: Option<u64>,
-    pub shock_magnitude: f64,
-    pub t_max: u64,
-    pub runs: usize,
-    pub seed: u64,
-    pub llm_temperature: f32,
-    pub llm_seed: u64,
-    pub llm_cache_path: Option<String>,
-    pub output_dir: String,
-}
-
-impl Config {
-    /// Build the `config.json` representation.
-    pub fn to_run_config_json(&self) -> RunConfigJson {
-        RunConfigJson {
-            command: "run",
-            n_teams: self.n_teams,
-            team_size: self.team_size,
-            n_levels: self.n_levels,
-            n_employees: self.n_employees(),
-            network_kind: self.network_kind,
-            network_k: self.network_k,
-            network_beta: self.network_beta,
-            supervisor_homogeneity: self.supervisor_homogeneity,
-            decision_mode: self.decision_mode,
-            prompt_version: self.prompt_version,
-            motive_init: self.motive_init,
-            beta: self.beta,
-            motive_learn_rate: self.motive_learn_rate,
-            psafety_learn: self.psafety_learn,
-            p_retaliate: self.p_retaliate,
-            shock_t: self.shock_t,
-            shock_magnitude: self.shock_magnitude,
-            t_max: self.t_max,
-            runs: self.runs,
-            seed: self.seed,
-            llm_temperature: self.llm.temperature,
-            llm_seed: self.llm.seed,
-            llm_cache_path: self.llm.cache_path.clone(),
-            output_dir: self.output_dir.clone(),
-        }
     }
 }
 

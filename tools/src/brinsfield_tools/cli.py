@@ -3,7 +3,7 @@
 Track B (ABM):
     brinsfield-tools visualize                 # 6-region stacked motive time-series
     brinsfield-tools visualize-sweep           # motive × ψ heatmap + KL contour
-    brinsfield-tools show-experiment-settings  # print config / sweep_config / llm_meta
+    brinsfield-tools show-experiment-settings  # print a run directory's conditions + LLM provenance
 
 Track A (psychometrics):
     brinsfield-tools survey-loader   # real --csv or calibrated --synthesize-n
@@ -35,7 +35,7 @@ main = build_dispatcher(
             "brinsfield_tools.visualize_sweep:main",
         ),
         "show-experiment-settings": (
-            "print a results directory's settings (config / sweep_config / llm_meta)",
+            "print a run directory's conditions + LLM provenance",
             "brinsfield_tools.show_experiment_settings:main",
         ),
         # ── Track A (psychometric replication) ─────────────────────────────
