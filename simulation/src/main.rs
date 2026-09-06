@@ -17,7 +17,7 @@ use std::fs;
 use std::path::Path;
 
 use clap::{Parser, Subcommand};
-use runvault::{Lineage, Run, RunOptions};
+use runvault::{Lineage, Progress, Run, RunOptions, Stage};
 use serde::Serialize;
 
 use brinsfield_silence_simulation::calibration::{
@@ -33,7 +33,7 @@ use brinsfield_silence_simulation::record::{
     self, ConditionParameters, ReplicateGroupParameters, SingleRunParameters, DOMAIN, EXPERIMENT,
     GROUP_SEED_POINTERS, HASH_EXCLUDE, REPO_ID, SINGLE_SEED_POINTERS,
 };
-use brinsfield_silence_simulation::simulation::{run_with_client, SimulationResult};
+use brinsfield_silence_simulation::simulation::{run_with_client_observed, SimulationResult};
 
 use socsim_llm::LlmClient;
 
@@ -276,8 +276,19 @@ fn build_client(cfg: &Config) -> Option<SilenceClient> {
 }
 
 /// 1 本のシミュレーションを回して run へ記録する（`run` / `reproduce` 共通）．
-fn simulate_into(run: &mut Run, cfg: &Config, client: Option<SilenceClient>) -> SimulationResult {
-    let result = run_with_client(cfg, client).unwrap_or_else(|e| panic!("run failed: {e}"));
+///
+/// 進捗の 1 単位は 1 ステップ．費用がそこにあるからで，1 ステップは全従業員に
+/// ついて決定を出し，`--decision-mode llm` ではその 1 つ 1 つがモデル呼び出しに
+/// なる．反復 1 本を 1 単位にすると，ライブの 1 本は 0/1 と出したきり終わりまで
+/// 黙る．
+fn simulate_into(
+    run: &mut Run,
+    cfg: &Config,
+    client: Option<SilenceClient>,
+    stage: &mut Stage,
+) -> SimulationResult {
+    let result = run_with_client_observed(cfg, client, |_| stage.tick())
+        .unwrap_or_else(|e| panic!("run failed: {e}"));
     record::log_simulation(run, &result);
     if cfg.decision_mode.is_llm() {
         record::log_llm_usage(run, &result);
@@ -337,15 +348,28 @@ fn cmd_run(args: RunArgs) {
     // 回す（LLM キャッシュの温まり方まで含めて振る舞いを変えないため）．run を起こす
     // 前に回しておくのは，status.json の duration_sec に «捨てる反復» の時間を
     // 混ぜないためである．
+    //
+    // 捨てる反復はまだ run が無いので，記録先の無い stderr だけの stage で数える．
+    // 数えないという選択肢は無い — `--runs 20 --decision-mode llm` なら，ここが
+    // このコマンドの時間のほとんどを占める．
+    let mut discarded = (runs > 1)
+        .then(|| Progress::to_stderr().stage("discarded", (runs - 1) * base_cfg.t_max as usize));
     for run_idx in 0..runs - 1 {
         let seed = record::replicate_seed(base_cfg.seed, run_idx);
         let cfg = Config {
             seed,
             ..base_cfg.clone()
         };
-        let result =
-            run_with_client(&cfg, build_client(&cfg)).unwrap_or_else(|e| panic!("run failed: {e}"));
+        let result = run_with_client_observed(&cfg, build_client(&cfg), |_| {
+            if let Some(stage) = discarded.as_mut() {
+                stage.tick();
+            }
+        })
+        .unwrap_or_else(|e| panic!("run failed: {e}"));
         print_result_line(run_idx + 1, runs, seed, &result);
+    }
+    if let Some(stage) = discarded {
+        stage.close();
     }
 
     // `--runs N` は掃引ではない．同じ条件を N 本回して最後の結果だけを残すのが
@@ -387,7 +411,11 @@ fn cmd_run(args: RunArgs) {
     }
     let mut rv = Run::start(options).expect("runvault: run の開始に失敗");
 
-    let result = simulate_into(&mut rv, &last_cfg, client);
+    let mut stage = rv.stage("steps", last_cfg.t_max as usize);
+    let result = simulate_into(&mut rv, &last_cfg, client, &mut stage);
+    // manifest.csv は finish() で封をされる．その後に 1 行足せば，manifest が
+    // 食い違うダイジェストを持つことになる．
+    stage.close();
     print_result_line(runs, runs, last_seed, &result);
 
     let calls = result.metadata.total();
@@ -484,6 +512,12 @@ fn cmd_sweep(args: SweepArgs) {
     println!("output: {}", parent.dir().display());
     println!("------------------------------------------------------------");
 
+    // グリッド全体で stage を 1 つ．セルごとに開け直すと小さな 100% が並ぶだけで，
+    // スイープ全体のどこにいるかは分からない．セルは決定モードを共有していて
+    // （掃引しているのは ψ_learn・p_retaliate・防衛的動機の初期値で，どれも
+    // 仕事の量を変えない）1 ステップの費用は全セルで同じなので，重みではなく数える．
+    let mut stage = parent.stage("steps", n_total * args.t_max as usize);
+
     let mut idx = 0usize;
     for &psl in &psafety_vals {
         for &pr in &retaliate_vals {
@@ -534,8 +568,9 @@ fn cmd_sweep(args: SweepArgs) {
                         runs: 1,
                         ..cell_cfg.clone()
                     };
-                    let result = run_with_client(&cfg, build_client(&cfg))
-                        .unwrap_or_else(|e| panic!("sweep run failed: {e}"));
+                    let result =
+                        run_with_client_observed(&cfg, build_client(&cfg), |_| stage.tick())
+                            .unwrap_or_else(|e| panic!("sweep run failed: {e}"));
                     let outcome = record::TrialOutcome::from_result(&result);
                     record::log_trial(&mut child, run_idx, seed, args.t_max, &outcome);
                     if idx.is_multiple_of(10) || idx == n_total {
@@ -552,6 +587,8 @@ fn cmd_sweep(args: SweepArgs) {
             }
         }
     }
+
+    stage.close();
 
     let dir = parent
         .finish()
@@ -627,6 +664,14 @@ fn cmd_ablate(args: AblateArgs) {
     println!("------------------------------------------------------------");
 
     for &mode in &modes {
+        // モードごとに別の stage にする．llm と rule_* では 1 ステップの費用が
+        // 桁で違う（前者は従業員 1 人ごとにモデル呼び出し，後者は算術だけ）ので，
+        // 1 つの stage にまとめると数からの外挿が «自信をもって外れた見積もり» に
+        // なる．比を重みで書くことはできない — その比はエンドポイント・モデル・
+        // キャッシュの当たり方で決まり，走らせる前には誰も知らないからである．
+        // 分ければ，stage の中の 1 ステップはすべて同じ費用になる．
+        let mut stage = parent.stage(mode.label(), args.runs * args.t_max as usize);
+
         let cell_cfg = Config {
             n_teams: args.n_teams,
             team_size: args.team_size,
@@ -666,7 +711,7 @@ fn cmd_ablate(args: AblateArgs) {
                 runs: 1,
                 ..cell_cfg.clone()
             };
-            let result = run_with_client(&cfg, build_client(&cfg))
+            let result = run_with_client_observed(&cfg, build_client(&cfg), |_| stage.tick())
                 .unwrap_or_else(|e| panic!("ablate run failed: {e}"));
             let outcome = record::TrialOutcome::from_result(&result);
             record::log_trial(&mut child, run_idx, seed, args.t_max, &outcome);
@@ -684,6 +729,7 @@ fn cmd_ablate(args: AblateArgs) {
             mean_def,
         );
 
+        stage.close();
         child
             .finish()
             .expect("runvault: ablate 子 run の完了に失敗");
@@ -737,7 +783,9 @@ fn cmd_reproduce(args: ReproduceArgs) {
     }
     let mut rv = Run::start(options).expect("runvault: run の開始に失敗");
 
-    let result = simulate_into(&mut rv, &cfg, client);
+    let mut stage = rv.stage("steps", cfg.t_max as usize);
+    let result = simulate_into(&mut rv, &cfg, client, &mut stage);
+    stage.close();
 
     // Average the steady-state (t >= t_max/2) motive_mix.
     let half = args.t_max / 2;
