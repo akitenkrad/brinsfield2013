@@ -1,3 +1,445 @@
-# Metric descriptions are not written yet (MYTASK-3382). Until they are,
-# runvault records undeclared metrics instead of refusing them.
-require_docs = false
+# 指標が何を測っているか (runvault の宣言．rs-runvault docs/metrics.ja.md)．
+#
+# 名前は `simulation/src/record.rs` と `simulation/src/main.rs` が書いているものと
+# 一致していなければならない．動機名と相関対象名は `simulation/src/motives.rs` と
+# `simulation/src/simulation.rs` の列挙表から取りうる直積をすべて展開している．
+#
+# `direction` は «どちらが良いか»．沈黙率・動機分布・相関・組織状態はいずれも
+# 模型の記述量なので `none` とする．参照分布からの KL だけは適合度として小さいほど
+# 良く，LLM cache-hit 率は実行品質として大きいほど良い．
+
+# --- ステップごと (scope=run, step=t) -------------------------------------
+
+[metrics."silence_rate"]
+meaning   = "そのステップで沈黙を選んだ従業員の割合"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_mix_ineffectual"]
+meaning   = "沈黙者のうち無力感動機が占める割合"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_mix_relational"]
+meaning   = "沈黙者のうち関係維持動機が占める割合"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_mix_defensive"]
+meaning   = "沈黙者のうち防衛動機が占める割合"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_mix_diffident"]
+meaning   = "沈黙者のうち自信欠如動機が占める割合"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_mix_disengaged"]
+meaning   = "沈黙者のうち離脱動機が占める割合"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_mix_deviant"]
+meaning   = "沈黙者のうち逸脱的保留動機が占める割合"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_vec_mean_ineffectual"]
+meaning   = "全従業員が持つ無力感動機確率の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_vec_mean_relational"]
+meaning   = "全従業員が持つ関係維持動機確率の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_vec_mean_defensive"]
+meaning   = "全従業員が持つ防衛動機確率の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_vec_mean_diffident"]
+meaning   = "全従業員が持つ自信欠如動機確率の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_vec_mean_disengaged"]
+meaning   = "全従業員が持つ離脱動機確率の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."motive_vec_mean_deviant"]
+meaning   = "全従業員が持つ逸脱的保留動機確率の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."n_distinct_motives_active"]
+meaning   = "そのステップの沈黙者に現れた異なる主要沈黙動機の数"
+unit      = "count"
+direction = "none"
+range     = [0.0, 6.0]
+scope     = ["run"]
+
+[metrics."climate_of_silence"]
+meaning   = "組織全体で知覚された沈黙風土の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."org_performance"]
+meaning   = "発言による知識蓄積から計算した組織業績の代理値"
+unit      = "score"
+direction = "none"
+scope     = ["run"]
+
+[metrics."issue_salience"]
+meaning   = "そのステップにおける組織課題の顕著性"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."kl_to_reference"]
+meaning   = "そのステップの沈黙動機分布から Brinsfield 参照分布への KL ダイバージェンス"
+unit      = "nats"
+direction = "down"
+scope     = ["run"]
+
+# --- run 全体と LLM の呼び出し -------------------------------------------
+
+[metrics."final_round"]
+meaning   = "停止したときの最終ラウンド番号"
+unit      = "count"
+direction = "none"
+scope     = ["run"]
+
+[metrics."corr_ineffectual_psafety"]
+meaning   = "最終ステップにおける無力感動機の soft share と心理的安全性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_ineffectual_fear"]
+meaning   = "最終ステップにおける無力感動機の soft share と怖れの Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_ineffectual_neuroticism"]
+meaning   = "最終ステップにおける無力感動機の soft share と神経症傾向の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_ineffectual_extraversion"]
+meaning   = "最終ステップにおける無力感動機の soft share と外向性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_ineffectual_climate_of_silence"]
+meaning   = "最終ステップにおける無力感動機の soft share と沈黙風土の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_relational_psafety"]
+meaning   = "最終ステップにおける関係維持動機の soft share と心理的安全性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_relational_fear"]
+meaning   = "最終ステップにおける関係維持動機の soft share と怖れの Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_relational_neuroticism"]
+meaning   = "最終ステップにおける関係維持動機の soft share と神経症傾向の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_relational_extraversion"]
+meaning   = "最終ステップにおける関係維持動機の soft share と外向性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_relational_climate_of_silence"]
+meaning   = "最終ステップにおける関係維持動機の soft share と沈黙風土の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_defensive_psafety"]
+meaning   = "最終ステップにおける防衛動機の soft share と心理的安全性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_defensive_fear"]
+meaning   = "最終ステップにおける防衛動機の soft share と怖れの Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_defensive_neuroticism"]
+meaning   = "最終ステップにおける防衛動機の soft share と神経症傾向の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_defensive_extraversion"]
+meaning   = "最終ステップにおける防衛動機の soft share と外向性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_defensive_climate_of_silence"]
+meaning   = "最終ステップにおける防衛動機の soft share と沈黙風土の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_diffident_psafety"]
+meaning   = "最終ステップにおける自信欠如動機の soft share と心理的安全性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_diffident_fear"]
+meaning   = "最終ステップにおける自信欠如動機の soft share と怖れの Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_diffident_neuroticism"]
+meaning   = "最終ステップにおける自信欠如動機の soft share と神経症傾向の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_diffident_extraversion"]
+meaning   = "最終ステップにおける自信欠如動機の soft share と外向性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_diffident_climate_of_silence"]
+meaning   = "最終ステップにおける自信欠如動機の soft share と沈黙風土の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_disengaged_psafety"]
+meaning   = "最終ステップにおける離脱動機の soft share と心理的安全性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_disengaged_fear"]
+meaning   = "最終ステップにおける離脱動機の soft share と怖れの Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_disengaged_neuroticism"]
+meaning   = "最終ステップにおける離脱動機の soft share と神経症傾向の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_disengaged_extraversion"]
+meaning   = "最終ステップにおける離脱動機の soft share と外向性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_disengaged_climate_of_silence"]
+meaning   = "最終ステップにおける離脱動機の soft share と沈黙風土の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_deviant_psafety"]
+meaning   = "最終ステップにおける逸脱的保留動機の soft share と心理的安全性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_deviant_fear"]
+meaning   = "最終ステップにおける逸脱的保留動機の soft share と怖れの Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_deviant_neuroticism"]
+meaning   = "最終ステップにおける逸脱的保留動機の soft share と神経症傾向の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_deviant_extraversion"]
+meaning   = "最終ステップにおける逸脱的保留動機の soft share と外向性の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."corr_deviant_climate_of_silence"]
+meaning   = "最終ステップにおける逸脱的保留動機の soft share と沈黙風土の Pearson 相関"
+unit      = "correlation"
+direction = "none"
+range     = [-1.0, 1.0]
+scope     = ["run"]
+
+[metrics."llm_calls"]
+meaning   = "この run が行った LLM の呼び出し回数"
+unit      = "count"
+direction = "none"
+scope     = ["run"]
+
+[metrics."llm_cache_hits"]
+meaning   = "LLM 呼び出しのうちキャッシュで応答した回数"
+unit      = "count"
+direction = "none"
+scope     = ["run"]
+
+[metrics."llm_cache_hit_rate"]
+meaning   = "LLM 呼び出しのうちキャッシュで応答した割合"
+unit      = "ratio"
+direction = "up"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+# --- sweep / ablate セルの試行平均 ----------------------------------------
+
+[metrics."mean_silence_rate"]
+meaning   = "セル内の試行群にわたる最終沈黙率の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."mean_motive_mix_defensive"]
+meaning   = "セル内の試行群にわたる最終防衛動機割合の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."mean_climate_of_silence"]
+meaning   = "セル内の試行群にわたる最終沈黙風土の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."mean_kl_to_reference"]
+meaning   = "セル内の試行群にわたる最終動機分布の KL ダイバージェンス平均"
+unit      = "nats"
+direction = "down"
+scope     = ["run"]
+
+# --- reproduce の定常動機分布 --------------------------------------------
+
+[metrics."steady_state_motive_mix_ineffectual"]
+meaning   = "run 後半のステップにわたる無力感動機割合の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."steady_state_motive_mix_relational"]
+meaning   = "run 後半のステップにわたる関係維持動機割合の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."steady_state_motive_mix_defensive"]
+meaning   = "run 後半のステップにわたる防衛動機割合の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."steady_state_motive_mix_diffident"]
+meaning   = "run 後半のステップにわたる自信欠如動機割合の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."steady_state_motive_mix_disengaged"]
+meaning   = "run 後半のステップにわたる離脱動機割合の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
+
+[metrics."steady_state_motive_mix_deviant"]
+meaning   = "run 後半のステップにわたる逸脱的保留動機割合の平均"
+unit      = "ratio"
+direction = "none"
+range     = [0.0, 1.0]
+scope     = ["run"]
