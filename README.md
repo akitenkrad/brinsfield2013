@@ -58,6 +58,11 @@ uv run brinsfield-tools reproduce --sample synth    # one-command reproduction
 uv run brinsfield-tools visualize
 ```
 
+
+## Scratch runs
+
+Use `--scratch` for development, debugging, and smoke-test runs. Scratch runs are created under `results/_scratch/`, are never synced to the vault, and the latest scratch run can be located with `runvault path --scratch`.
+
 ## Reproduced anchors
 
 On the bundled smoke configuration:

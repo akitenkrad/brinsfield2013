@@ -49,6 +49,9 @@ use socsim_llm::LlmClient;
 struct Cli {
     #[command(subcommand)]
     command: Commands,
+    /// Development run: write it under results/_scratch/ so it is never synced to the vault.
+    #[arg(long, global = true)]
+    scratch: bool,
     /// Ollama 接続先 URL（指定時は環境変数 OLLAMA_HOST を上書きする）．
     #[arg(long, global = true)]
     ollama_host: Option<String>,
@@ -320,7 +323,7 @@ fn print_result_line(index: usize, total: usize, seed: u64, result: &SimulationR
 // run
 // --------------------------------------------------------------------------- //
 
-fn cmd_run(args: RunArgs) {
+fn cmd_run(args: RunArgs, scratch: bool) {
     let base_cfg = cfg_from_run_args(&args);
     ensure_cache_dir(&base_cfg);
     let runs = base_cfg.runs.max(1);
@@ -392,6 +395,7 @@ fn cmd_run(args: RunArgs) {
     });
 
     let mut options = RunOptions::new(EXPERIMENT, "run")
+        .scratch(scratch)
         .repo_id(REPO_ID)
         .domain(DOMAIN)
         .results_root(&args.output_dir)
@@ -456,7 +460,7 @@ struct SweepParameters {
     base_seed: u64,
 }
 
-fn cmd_sweep(args: SweepArgs) {
+fn cmd_sweep(args: SweepArgs, scratch: bool) {
     let decision_mode = parse_decision_mode(&args.decision_mode).unwrap_or_else(|e| panic!("{e}"));
 
     let psafety_vals = parse_f64_list(&args.psafety_learn);
@@ -471,6 +475,7 @@ fn cmd_sweep(args: SweepArgs) {
     // /base_seed と seed_pointers 経由で execution_hash に残る．
     let parent = Run::start(
         RunOptions::new(EXPERIMENT, "sweep")
+            .scratch(scratch)
             .repo_id(REPO_ID)
             .domain(DOMAIN)
             .results_root(&args.output_dir)
@@ -541,6 +546,7 @@ fn cmd_sweep(args: SweepArgs) {
                 // 繰り返しは無いので replicate_index は 0．
                 let mut child = Run::start(
                     RunOptions::new(EXPERIMENT, "sweep-point")
+                        .scratch(scratch)
                         .repo_id(REPO_ID)
                         .domain(DOMAIN)
                         .results_root(&args.output_dir)
@@ -616,7 +622,7 @@ struct AblateParameters {
     base_seed: u64,
 }
 
-fn cmd_ablate(args: AblateArgs) {
+fn cmd_ablate(args: AblateArgs, scratch: bool) {
     let modes: Vec<DecisionMode> = args
         .decision_modes
         .split([',', ' '])
@@ -628,6 +634,7 @@ fn cmd_ablate(args: AblateArgs) {
     // する．セルは決定モード 1 つで，そのセルの試行が terminal 行になる．
     let parent = Run::start(
         RunOptions::new(EXPERIMENT, "ablate")
+            .scratch(scratch)
             .repo_id(REPO_ID)
             .domain(DOMAIN)
             .results_root(&args.output_dir)
@@ -685,6 +692,7 @@ fn cmd_ablate(args: AblateArgs) {
 
         let mut child = Run::start(
             RunOptions::new(EXPERIMENT, "ablate-point")
+                .scratch(scratch)
                 .repo_id(REPO_ID)
                 .domain(DOMAIN)
                 .results_root(&args.output_dir)
@@ -748,7 +756,7 @@ fn cmd_ablate(args: AblateArgs) {
 // reproduce
 // --------------------------------------------------------------------------- //
 
-fn cmd_reproduce(args: ReproduceArgs) {
+fn cmd_reproduce(args: ReproduceArgs, scratch: bool) {
     let mode = parse_decision_mode(&args.decision_mode).unwrap_or_else(|e| panic!("{e}"));
 
     let cfg = Config {
@@ -766,6 +774,7 @@ fn cmd_reproduce(args: ReproduceArgs) {
         .map(|c| record::llm_block(c.inner().model(), c.inner().endpoint(), cfg.llm.temperature));
 
     let mut options = RunOptions::new(EXPERIMENT, "reproduce")
+        .scratch(scratch)
         .repo_id(REPO_ID)
         .domain(DOMAIN)
         .results_root(&args.output_dir)
@@ -879,13 +888,14 @@ fn cmd_reproduce(args: ReproduceArgs) {
 
 fn main() {
     let cli = Cli::parse();
+    let scratch = cli.scratch;
     if let Some(host) = cli.ollama_host.as_deref() {
         std::env::set_var("OLLAMA_HOST", host);
     }
     match cli.command {
-        Commands::Run(args) => cmd_run(args),
-        Commands::Sweep(args) => cmd_sweep(args),
-        Commands::Ablate(args) => cmd_ablate(args),
-        Commands::Reproduce(args) => cmd_reproduce(args),
+        Commands::Run(args) => cmd_run(args, scratch),
+        Commands::Sweep(args) => cmd_sweep(args, scratch),
+        Commands::Ablate(args) => cmd_ablate(args, scratch),
+        Commands::Reproduce(args) => cmd_reproduce(args, scratch),
     }
 }
