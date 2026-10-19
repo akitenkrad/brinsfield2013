@@ -248,6 +248,7 @@ fn cfg_from_run_args(args: &RunArgs) -> Config {
         runs: args.runs,
         seed: args.seed,
         llm: LlmSettings {
+            think: None,
             temperature: args.temperature,
             seed: args.llm_seed,
             cache_path: Some(args.llm_cache_path.clone()),

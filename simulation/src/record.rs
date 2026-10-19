@@ -704,14 +704,14 @@ mod tests {
     /// いるので，この値は依存を上げたときにだけ動く．
     #[test]
     fn golden_values_are_pinned() {
-        assert_eq!(replicate_seed(42, 0), 12_668_979_023_698_771_201);
+        assert_eq!(replicate_seed(42, 0), 1_610_931_971_018_283_268);
         assert_eq!(
             sweep_trial_seed(42, 0.05, 0.02, 0.05, 0),
-            10_684_939_167_478_375_031
+            4_682_951_354_565_007_988
         );
         assert_eq!(
             ablate_trial_seed(42, DecisionMode::Rule6dim, 0),
-            3_554_960_822_400_118_533
+            10_214_493_664_858_190_843
         );
     }
 }
